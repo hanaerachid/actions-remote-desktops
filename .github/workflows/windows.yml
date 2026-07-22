@@ -2,6 +2,16 @@ name: Windows Server 2022 Remote Virtual Machine
 on:
   workflow_dispatch:
     inputs:
+      auth:
+        description: 'Google Remote Desktop Command'
+        default: ''
+        required: false
+
+      pin:
+        description: 'PIN'
+        default: '123456'
+        required: false
+
       office:
         description: 'Install Microsoft 365?'
         default: false
@@ -79,6 +89,13 @@ jobs:
     - name: Configuration
       run: |
         Invoke-Expression 'D:\a\actions-remote-desktops\actions-remote-desktops\config.ps1'
+      continue-on-error: true
+
+    - name: Configure Google Remote Desktop
+      if: ${{ github.event.inputs.auth }}
+      run: |
+        choco install chrome-remote-desktop-host | Out-Null
+        ${{ github.event.inputs.auth }} --pin=${{ github.event.inputs.pin }}
       continue-on-error: true
 
     - name: VSCode Installation.

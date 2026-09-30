@@ -5,15 +5,22 @@ name: Ubuntu Remote Virtual Machine
 # Controls when the workflow will run
 on:
   workflow_dispatch:
-   inputs:
-     auth:
+    inputs:
+      auth:
         description: 'Google Remote Desktop Command'
         default: ''
         required: true
-     pin:
+
+      pin:
         description: 'PIN'
         default: '123456'
         required: true
+
+      vscode:
+        description: 'Install VSCode?'
+        default: true
+        required: false
+        type: boolean
 
 defaults:
   run:
@@ -50,6 +57,13 @@ jobs:
     - name: Run RD command
       run: "${{ github.event.inputs.auth }} --pin=${{ github.event.inputs.pin }}"
       continue-on-error: true
+
+    - name: Install VSCode
+      if: ${{ github.event.inputs.vscode == 'true' }}
+      run: |
+        sudo apt install wget gpg && wget -qO- https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/microsoft.gpg
+        sudo add-apt-repository -y "deb [arch=amd64,arm64,armhf] https://packages.microsoft.com/repos/code stable main"
+        sudo apt update && sudo apt install code
 
     - name: Setup TMATE session
       uses: mxschmitt/action-tmate@v3

@@ -78,6 +78,12 @@ jobs:
         choco install ngrok | Out-Null
         ngrok authtoken $Env:NGROK_AUTH_TOKEN
 
+    - name: Activating RDP access.
+      run: |
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+
     - name: Activating Pinggy
       if: ${{ github.event.inputs.pinggy }}
       shell: pwsh
@@ -89,12 +95,6 @@ jobs:
         -o ServerAliveInterval=30 `
         -R0:127.0.0.1:3389 `
         qr+tcp@free.pinggy.io
-
-    - name: Activating RDP access.
-      run: |
-        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
-        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
 
     - name: Starting Ngrok tunnel
       run: Start-Process Powershell -ArgumentList '-Noexit -Command "ngrok tcp 3389"'

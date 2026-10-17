@@ -17,6 +17,12 @@ on:
         default: false
         required: false
         type: boolean
+      
+      pinggy:
+        description: 'Use Pinggy'
+        default: false
+        required: false
+        type: boolean
 
       qgis:
         description: 'Install QGIS?'
@@ -71,6 +77,18 @@ jobs:
       run: |
         choco install ngrok | Out-Null
         ngrok authtoken $Env:NGROK_AUTH_TOKEN
+
+    - name: Activating Pinggy
+      if: ${{ github.event.inputs.pinggy }}
+      shell: pwsh
+      run: |
+        ssh -p 443 `
+        -o StrictHostKeyChecking=no `
+        -o UserKnownHostsFile=NUL `
+        -o BatchMode=yes `
+        -o ServerAliveInterval=30 `
+        -R0:127.0.0.1:3389 `
+        qr+tcp@free.pinggy.io
 
     - name: Activating RDP access.
       run: |

@@ -17,12 +17,6 @@ on:
         default: false
         required: false
         type: boolean
-      
-      pinggy:
-        description: 'Use Pinggy'
-        default: false
-        required: false
-        type: boolean
 
       qgis:
         description: 'Install QGIS?'
@@ -83,18 +77,6 @@ jobs:
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
-
-    - name: Activating Pinggy
-      if: ${{ github.event.inputs.pinggy }}
-      shell: pwsh
-      run: |
-        ssh -p 443 `
-        -o StrictHostKeyChecking=no `
-        -o UserKnownHostsFile=NUL `
-        -o BatchMode=yes `
-        -o ServerAliveInterval=30 `
-        -R0:127.0.0.1:3389 `
-        qr+tcp@free.pinggy.io
 
     - name: Starting Ngrok tunnel
       run: Start-Process Powershell -ArgumentList '-Noexit -Command "ngrok tcp 3389"'

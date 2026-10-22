@@ -22,6 +22,17 @@ on:
         required: false
         type: boolean
 
+      desktop_environment:
+        description: 'Choose a desktop environment'
+        required: false
+        type: choice
+        default: xfce
+        options:
+          - xfce
+          - gnome
+          - plasma_kde
+      
+
 defaults:
   run:
     shell: bash
@@ -64,6 +75,32 @@ jobs:
         sudo apt install wget gpg && wget -qO- https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/microsoft.gpg
         sudo add-apt-repository -y "deb [arch=amd64,arm64,armhf] https://packages.microsoft.com/repos/code stable main"
         sudo apt update && sudo apt install code
+
+    - name: Install XFCE
+      if: ${{ inputs.desktop_environment == 'xfce' }}
+      shell: bash
+      run: |
+        echo "You are already on XFCE"
+
+    - name: Install GNOME
+      if: ${{ inputs.desktop_environment == 'gnome' }}
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ubuntu-desktop
+      
+        echo "exec /etc/X11/Xsession /usr/bin/gnome-session" \
+          > "$HOME/.chrome-remote-desktop-session"
+      
+    - name: Install KDE Plasma
+      if: ${{ inputs.desktop_environment == 'plasma_kde' }}
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y kde-plasma-desktop
+      
+        echo "exec /etc/X11/Xsession /usr/bin/startplasma-x11" \
+          > "$HOME/.chrome-remote-desktop-session"
 
     - name: Setup TMATE session
       uses: mxschmitt/action-tmate@v3

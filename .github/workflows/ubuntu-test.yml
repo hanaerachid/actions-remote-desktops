@@ -62,10 +62,11 @@ jobs:
       if: ${{ inputs.desktop_environment == 'xfce' }}
       shell: bash
       run: |
-        sudo DEBIAN_FRONTEND=noninteractive apt install --assume-yes xfce4 desktop-base dbus-x11 xscreensaver
+        sudo DEBIAN_FRONTEND=noninteractive apt install --assume-yes --fix-broken xfce4 desktop-base dbus-x11 xscreensaver
         sudo bash -c 'echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" > /etc/chrome-remote-desktop-session'
         sudo apt install --assume-yes xscreensaver
         sudo systemctl disable lightdm.service
+      continue-on-error: true
 
     - name: Install GNOME
       if: ${{ inputs.desktop_environment == 'gnome' }}
@@ -74,7 +75,8 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y ubuntu-desktop
         sudo bash -c 'echo "exec /etc/X11/Xsession /usr/bin/gnome-session" > /etc/chrome-remote-desktop-session'
-      
+      continue-on-error: true
+
     - name: Install KDE Plasma
       if: ${{ inputs.desktop_environment == 'plasma_kde' }}
       shell: bash
@@ -82,6 +84,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y kde-plasma-desktop
         sudo bash -c 'echo "exec /etc/X11/Xsession /usr/bin/startplasma-x11" > /etc/chrome-remote-desktop-session'
+      continue-on-error: true
 
     - name: Install RD
       shell: bash

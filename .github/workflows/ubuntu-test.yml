@@ -96,16 +96,11 @@ jobs:
     - name: Install RD
       shell: bash
       run: |
-        sudo apt-get clean
-        sudo rm -rf /var/lib/apt/lists/*
+        echo "deb [arch=amd64] https://dl.google.com/linux/chrome-remote-desktop/deb stable main" \
+          | sudo tee /etc/apt/sources.list.d/chrome-remote-desktop.list
         sudo apt-get update
-        sudo DEBIAN_FRONTEND=noninteractive apt-get \
-          -o Acquire::Retries=3 \
-          --fix-broken install -y
-        sudo DEBIAN_FRONTEND=noninteractive apt-get \
-          -o Acquire::Retries=3 \
-        install --assume-yes \
-          https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install \
+          --assume-yes chrome-remote-desktop
       continue-on-error: true
 
     - name: Run RD command

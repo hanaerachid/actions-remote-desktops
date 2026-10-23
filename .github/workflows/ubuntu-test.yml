@@ -93,6 +93,7 @@ jobs:
         sudo apt-get --fix-broken install -y
         sudo apt-get install -y \
           https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
+      continue-on-error: true
 
     - name: Run RD command
       run: "${{ github.event.inputs.auth }} --pin=${{ github.event.inputs.pin }}"
@@ -104,6 +105,7 @@ jobs:
         wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
         sudo apt install --assume-yes ./google-chrome-stable_current_amd64.deb
         sudo apt install --assume-yes --fix-broken
+      continue-on-error: true
 
     - name: Install VSCode
       if: ${{ github.event.inputs.vscode == 'true' }}

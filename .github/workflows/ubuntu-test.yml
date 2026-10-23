@@ -90,9 +90,9 @@ jobs:
       shell: bash
       run: |
         sudo apt-get update
-        wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
-        sudo dpkg --install chrome-remote-desktop_current_amd64.deb
-        sudo apt install --assume-yes --fix-broken
+        sudo apt-get --fix-broken install -y
+        sudo apt-get install -y \
+          https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
 
     - name: Run RD command
       run: "${{ github.event.inputs.auth }} --pin=${{ github.event.inputs.pin }}"

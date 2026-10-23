@@ -50,7 +50,7 @@ jobs:
     - name: Install Google chrome
       shell: bash
       run: |
-        curl https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/chrome-remote-desktop.gpg
+        curl https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --batch --yes --dearmor -o /etc/apt/trusted.gpg.d/chrome-remote-desktop.gpg
         echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
         sudo apt update
         sudo DEBIAN_FRONTEND=noninteractive sudo apt install google-chrome-stable
@@ -59,7 +59,7 @@ jobs:
     - name: Install RD
       shell: bash
       run: |
-        curl https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/chrome-remote-desktop.gpg
+        curl https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --batch --yes --dearmor -o /etc/apt/trusted.gpg.d/chrome-remote-desktop.gpg
         echo "deb [arch=amd64] https://dl.google.com/linux/chrome-remote-desktop/deb stable main" | sudo tee /etc/apt/sources.list.d/chrome-remote-desktop.list
         sudo apt update
         sudo DEBIAN_FRONTEND=noninteractive apt install --assume-yes chrome-remote-desktop

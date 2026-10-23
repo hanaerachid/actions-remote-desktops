@@ -1,0 +1,123 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Ubuntu Remote Virtual Machine
+
+# Controls when the workflow will run
+on:
+  workflow_dispatch:
+    inputs:
+      auth:
+        description: 'Google Remote Desktop Command'
+        default: ''
+        required: true
+
+      pin:
+        description: 'PIN'
+        default: '123456'
+        required: true
+
+      vscode:
+        description: 'Install VSCode?'
+        default: true
+        required: false
+        type: boolean
+
+      desktop_environment:
+        description: 'Choose a desktop environment'
+        required: false
+        type: choice
+        default: xfce
+        options:
+          - xfce
+          - gnome
+          - plasma_kde
+      
+
+defaults:
+  run:
+    shell: bash
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    name: 'Set up a Ubuntu machine'
+    # Steps represent a sequence of tasks that will be executed as part of the job
+
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: Check out repository code
+      uses: actions/checkout@v3
+
+    - name: Add User
+      run: |
+        sudo useradd -m brooke
+        sudo adduser brooke sudo
+        echo 'brooke:Jacobs123' | sudo chpasswd
+        sudo sed -i 's/\/bin\/sh/\/bin\/bash/g' /etc/passwd
+      continue-on-error: true
+
+    - name: Install RD
+      shell: bash
+      run: |
+        sudo apt-get update
+        wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
+        sudo dpkg --install chrome-remote-desktop_current_amd64.deb
+        sudo apt install --assume-yes --fix-broken
+
+    - name: Run RD command
+      run: "${{ github.event.inputs.auth }} --pin=${{ github.event.inputs.pin }}"
+      continue-on-error: true
+
+    - name: Install Google chrome
+      shell: bash
+      run: |
+        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo apt install --assume-yes ./google-chrome-stable_current_amd64.deb
+        sudo apt install --assume-yes --fix-broken
+
+    - name: Install VSCode
+      if: ${{ github.event.inputs.vscode == 'true' }}
+      run: |
+        sudo apt install wget gpg && wget -qO- https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/microsoft.gpg
+        sudo add-apt-repository -y "deb [arch=amd64,arm64,armhf] https://packages.microsoft.com/repos/code stable main"
+        sudo apt update && sudo apt install code
+
+    - name: Install XFCE
+      if: ${{ inputs.desktop_environment == 'xfce' }}
+      shell: bash
+      run: |
+        sudo DEBIAN_FRONTEND=noninteractive
+        apt install --assume-yes xfce4 desktop-base dbus-x11 xscreensaver
+        sudo bash -c 'echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" > /etc/chrome-remote-desktop-session'
+        sudo apt install --assume-yes xscreensaver
+        sudo systemctl disable lightdm.service
+
+    - name: Install GNOME
+      if: ${{ inputs.desktop_environment == 'gnome' }}
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ubuntu-desktop
+      
+        echo "exec /etc/X11/Xsession /usr/bin/gnome-session" \
+          > "$HOME/.chrome-remote-desktop-session"
+      
+    - name: Install KDE Plasma
+      if: ${{ inputs.desktop_environment == 'plasma_kde' }}
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y kde-plasma-desktop
+      
+        echo "exec /etc/X11/Xsession /usr/bin/startplasma-x11" \
+          > "$HOME/.chrome-remote-desktop-session"
+
+    - name: Add user to RD group
+      shell: bash
+      run: sudo adduser brooke chrome-remote-desktop
+
+    - name: Setup TMATE session
+      uses: mxschmitt/action-tmate@v3
+      continue-on-error: true

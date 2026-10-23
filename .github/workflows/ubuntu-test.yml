@@ -50,10 +50,10 @@ jobs:
     - name: Install Google chrome
       shell: bash
       run: |
-        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+        curl https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/chrome-remote-desktop.gpg
         echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
         sudo apt update
-        sudo apt install google-chrome-stable
+        sudo DEBIAN_FRONTEND=noninteractive sudo apt install google-chrome-stable
       continue-on-error: true
 
     - name: Install RD
@@ -93,6 +93,7 @@ jobs:
     - name: Add user to RD group
       shell: bash
       run: sudo adduser brooke chrome-remote-desktop
+      continue-on-error: true
 
     - name: Setup TMATE session
       uses: mxschmitt/action-tmate@v3

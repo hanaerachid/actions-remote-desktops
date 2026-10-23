@@ -62,9 +62,16 @@ jobs:
       if: ${{ inputs.desktop_environment == 'xfce' }}
       shell: bash
       run: |
-        sudo DEBIAN_FRONTEND=noninteractive apt install --assume-yes --fix-broken xfce4 desktop-base dbus-x11 xscreensaver
-        sudo bash -c 'echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" > /etc/chrome-remote-desktop-session'
-        sudo apt install --assume-yes xscreensaver
+        sudo apt-get clean
+        sudo rm -rf /var/lib/apt/lists/*
+        sudo apt-get update
+        sudo DEBIAN_FRONTEND=noninteractive apt-get \
+          -o Acquire::Retries=3 \
+          --fix-broken install -y
+        sudo DEBIAN_FRONTEND=noninteractive apt-get \
+          -o Acquire::Retries=3 \
+          install --assume-yes xfce4 desktop-base dbus-x11 xscreensaver
+        # sudo bash -c 'echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" > /etc/chrome-remote-desktop-session'
         sudo systemctl disable lightdm.service
       continue-on-error: true
 
@@ -89,9 +96,15 @@ jobs:
     - name: Install RD
       shell: bash
       run: |
+        sudo apt-get clean
+        sudo rm -rf /var/lib/apt/lists/*
         sudo apt-get update
-        sudo apt-get --fix-broken install -y
-        sudo apt-get install -y \
+        sudo DEBIAN_FRONTEND=noninteractive apt-get \
+          -o Acquire::Retries=3 \
+          --fix-broken install -y
+        sudo DEBIAN_FRONTEND=noninteractive apt-get \
+          -o Acquire::Retries=3 \
+        install --assume-yes \
           https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
       continue-on-error: true
 

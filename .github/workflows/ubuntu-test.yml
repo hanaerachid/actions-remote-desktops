@@ -22,17 +22,6 @@ on:
         required: false
         type: boolean
 
-      desktop_environment:
-        description: 'Choose a desktop environment'
-        required: false
-        type: choice
-        default: xfce
-        options:
-          - xfce
-          - gnome
-          - plasma_kde
-      
-
 defaults:
   run:
     shell: bash
@@ -58,8 +47,25 @@ jobs:
         sudo sed -i 's/\/bin\/sh/\/bin\/bash/g' /etc/passwd
       continue-on-error: true
 
+    - name: Install Google chrome
+      shell: bash
+      run: |
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+        sudo apt update
+        sudo apt install google-chrome-stable
+      continue-on-error: true
+
+    - name: Install RD
+      shell: bash
+      run: |
+        curl https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/chrome-remote-desktop.gpg
+        echo "deb [arch=amd64] https://dl.google.com/linux/chrome-remote-desktop/deb stable main" | sudo tee /etc/apt/sources.list.d/chrome-remote-desktop.list
+        sudo apt update
+        sudo DEBIAN_FRONTEND=noninteractive apt install --assume-yes chrome-remote-desktop
+      continue-on-error: true
+
     - name: Install XFCE
-      if: ${{ inputs.desktop_environment == 'xfce' }}
       shell: bash
       run: |
         sudo apt-get clean
@@ -68,51 +74,13 @@ jobs:
         sudo DEBIAN_FRONTEND=noninteractive apt-get \
           -o Acquire::Retries=3 \
           --fix-broken install -y
-        sudo DEBIAN_FRONTEND=noninteractive apt-get \
-          -o Acquire::Retries=3 \
-          install --assume-yes xfce4 desktop-base dbus-x11 xscreensaver
-        # sudo bash -c 'echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" > /etc/chrome-remote-desktop-session'
+        sudo DEBIAN_FRONTEND=noninteractive apt install --assume-yes xfce4 desktop-base dbus-x11 xscreensaver
+        sudo bash -c 'echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" > /etc/chrome-remote-desktop-session'
         sudo systemctl disable lightdm.service
-      continue-on-error: true
-
-    - name: Install GNOME
-      if: ${{ inputs.desktop_environment == 'gnome' }}
-      shell: bash
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y ubuntu-desktop
-        sudo bash -c 'echo "exec /etc/X11/Xsession /usr/bin/gnome-session" > /etc/chrome-remote-desktop-session'
-      continue-on-error: true
-
-    - name: Install KDE Plasma
-      if: ${{ inputs.desktop_environment == 'plasma_kde' }}
-      shell: bash
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y kde-plasma-desktop
-        sudo bash -c 'echo "exec /etc/X11/Xsession /usr/bin/startplasma-x11" > /etc/chrome-remote-desktop-session'
-      continue-on-error: true
-
-    - name: Install RD
-      shell: bash
-      run: |
-        echo "deb [arch=amd64] https://dl.google.com/linux/chrome-remote-desktop/deb stable main" \
-          | sudo tee /etc/apt/sources.list.d/chrome-remote-desktop.list
-        sudo apt-get update
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install \
-          --assume-yes chrome-remote-desktop
       continue-on-error: true
 
     - name: Run RD command
       run: "${{ github.event.inputs.auth }} --pin=${{ github.event.inputs.pin }}"
-      continue-on-error: true
-
-    - name: Install Google chrome
-      shell: bash
-      run: |
-        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-        sudo apt install --assume-yes ./google-chrome-stable_current_amd64.deb
-        sudo apt install --assume-yes --fix-broken
       continue-on-error: true
 
     - name: Install VSCode

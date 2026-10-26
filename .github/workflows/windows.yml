@@ -2,6 +2,18 @@ name: Windows Server 2022 Remote Virtual Machine
 on:
   workflow_dispatch:
     inputs:
+      ngrok:
+        description: "Use Ngrok"
+        default: false
+        required: false
+        type: boolean
+
+      thetun:
+        description: 'Use THETUN'
+        default: true
+        required: false
+        type: boolean
+
       auth:
         description: 'Google Remote Desktop Command'
         default: ''
@@ -79,7 +91,12 @@ jobs:
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
 
     - name: Starting Ngrok tunnel
+      if: ${{ github.event.inputs.ngrok == 'true' }}
       run: Start-Process Powershell -ArgumentList '-Noexit -Command "ngrok tcp 3389"'
+
+    - name: Starting THE tunnel
+      if: ${{ github.event.inputs.thetun == 'true' }}
+      run: Start-Process Powershell -ArgumentList '-Noexit -Command "ssh -o StrictHostKeyChecking=accept-new -p 27550 -R 3389:localhost:3389 admin@mainline.proxy.rlwy.net"'
 
     - name: Launching the start script
       run: |

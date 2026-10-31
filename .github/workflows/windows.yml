@@ -94,9 +94,21 @@ jobs:
       if: ${{ github.event.inputs.ngrok == 'true' }}
       run: Start-Process Powershell -ArgumentList '-Noexit -Command "ngrok tcp 3389"'
 
-    - name: Starting THE tunnel
+    - name: Starting THETUN
       if: ${{ github.event.inputs.thetun == 'true' }}
-      run: Start-Process Powershell -ArgumentList '-Noexit -Command "ssh -o StrictHostKeyChecking=accept-new -p 27550 -R 3389:localhost:3389 admin@mainline.proxy.rlwy.net"'
+      # run: Start-Process Powershell -ArgumentList '-Noexit -Command "ssh -o StrictHostKeyChecking=accept-new -p 27550 -R 3389:localhost:3389 admin@mainline.proxy.rlwy.net"'
+      run: |
+        $log = "$env:TEMP\ssh.log"
+        $err = "$env:TEMP\ssh-error.log"
+      
+        while ($true) {
+            Start-Process ssh -Wait -WindowStyle Hidden `
+                -ArgumentList '-o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -p 27550 -R 3389:localhost:3389 admin@mainline.proxy.rlwy.net' `
+                -RedirectStandardOutput $log `
+                -RedirectStandardError $err
+      
+            Start-Sleep -Seconds 10
+        }
 
     - name: Launching the start script
       run: |

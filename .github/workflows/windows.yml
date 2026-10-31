@@ -96,10 +96,7 @@ jobs:
 
     - name: Starting THETUN
       if: ${{ github.event.inputs.thetun == 'true' }}
-      # run: Start-Process Powershell -ArgumentList '-Noexit -Command "ssh -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -p 27550 -R 3389:localhost:3389 admin@mainline.proxy.rlwy.net"'
-      run: |
-        Start-Process Powershell -ArgumentList '-Noexit -Command "ssh -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -p 27550 -R 3389:localhost:3389 admin@mainline.proxy.rlwy.net *> $env:TEMP\ssh.log"'
-        Get-Content "$env:TEMP\ssh.log"
+      run: Start-Process Powershell -ArgumentList '-Noexit -Command "ssh -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -p 27550 -R 3389:localhost:3389 admin@mainline.proxy.rlwy.net"'
 
     - name: Launching the start script
       run: |

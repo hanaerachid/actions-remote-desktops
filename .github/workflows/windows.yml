@@ -14,6 +14,18 @@ on:
         required: false
         type: boolean
 
+      zerotier:
+        description: 'Use ZeroTier'
+        default: true
+        required: false
+        type: boolean
+
+      network:
+        description: 'ZeroTier Netowrk'
+        default: ''
+        required: false
+        type: string
+
       auth:
         description: 'Google Remote Desktop Command'
         default: ''
@@ -32,7 +44,7 @@ on:
 
       qgis:
         description: 'Install QGIS?'
-        default: false
+        default: true
         required: false
         type: boolean
 
@@ -62,7 +74,7 @@ on:
 
       illustrator:
         description: 'Install Adobe Illustrator?'
-        default: true
+        default: false
         required: false
         type: boolean
 
@@ -129,6 +141,13 @@ jobs:
       run: |
         choco install chrome-remote-desktop-host | Out-Null
         ${{ github.event.inputs.auth }} --pin=${{ github.event.inputs.pin }}
+      continue-on-error: true
+
+    - name: Install and configure ZeroTier
+      if: ${{ github.event.inputs.zerotier == 'true' }}
+      run: |
+        choco install zerotier-one | Out-Null
+        zerotier-cli join ${{ github.event.inputs.network }}
       continue-on-error: true
 
     - name: VSCode Installation.

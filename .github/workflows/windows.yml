@@ -89,6 +89,14 @@ jobs:
     - name: Check out repository code
       uses: actions/checkout@v3
 
+    - name: Setup MEGA Drive
+      shell: powershell
+      env:
+        MEGA_EMAIL: ${{ secrets.MEGA_EMAIL }}
+        MEGA_PASSWORD: ${{ secrets.MEGA_PASSWORD }}
+      run: |
+        Invoke-Expression "& 'D:\a\actions-remote-desktops\actions-remote-desktops\Setup-MegaDrive.ps1' -MegaEmail `$env:MEGA_EMAIL -MegaPassword `$env:MEGA_PASSWORD -DriveLetter X -TargetFolders @('Downloads','Documents')"
+
     - name: Installing and configuring Ngrok
       env:
         NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}

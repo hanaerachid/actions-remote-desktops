@@ -64,14 +64,30 @@ function Invoke-Mega {
         [string[]]$Arguments = @()
     )
 
-    $Output = & $Command @Arguments 2>&1
-    $ExitCode = $LASTEXITCODE
+    $PreviousPreference = $ErrorActionPreference
 
-    if ($ExitCode -ne 0) {
-        throw "MEGA command failed: $Command (exit code $ExitCode). Output: $($Output -join ' ')"
+    try {
+        # Native command output should not automatically terminate
+        # the PowerShell script.
+        $ErrorActionPreference = 'Continue'
+
+        $Output = @(& $Command @Arguments 2>&1)
+
+        $ExitCode = $LASTEXITCODE
+
+        if ($ExitCode -ne 0) {
+            $Message = $Output | ForEach-Object {
+                $_.ToString()
+            }
+
+            throw "$Command failed with exit code $ExitCode. $($Message -join ' ')"
+        }
+
+        return $Output
     }
-
-    return $Output
+    finally {
+        $ErrorActionPreference = $PreviousPreference
+    }
 }
 
 # ============================================================
@@ -179,10 +195,21 @@ Write-Step "Authenticating as $MegaEmail..."
 
 # Do not write the password or command arguments to the log.
 
-Invoke-Mega -Command 'mega-login' -Arguments @(
-    $MegaEmail,
-    $MegaPassword
-) | Out-Null
+Write-Step 'Authenticating with MEGA...'
+
+try {
+    Invoke-Mega -Command 'mega-login' -Arguments @(
+        $MegaEmail,
+        $MegaPassword
+    ) | Out-Null
+
+    Write-Step 'Authentication command completed.'
+}
+catch {
+    Write-Host "MEGA authentication failed." -ForegroundColor Red
+    Write-Host $_.Exception.Message -ForegroundColor Red
+    exit 1
+}
 
 Write-Step 'MEGA authentication completed.'
 

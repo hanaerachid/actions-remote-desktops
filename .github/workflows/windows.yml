@@ -111,14 +111,13 @@ jobs:
       run: Start-Process Powershell -ArgumentList '-Noexit -Command "ssh -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -p 27550 -R 3389:localhost:3389 admin@mainline.proxy.rlwy.net"'
 
     - name: Setup MEGA Drive
-      shell: powershell
+      id: mega
+      shell: pwsh
       env:
         MEGA_EMAIL: ${{ secrets.MEGA_EMAIL }}
         MEGA_PASSWORD: ${{ secrets.MEGA_PASSWORD }}
       run: |
-        & "$env:GITHUB_WORKSPACE\Setup-MegaDrive.ps1" `
-          -MegaEmail $env:MEGA_EMAIL `
-          -MegaPassword $env:MEGA_PASSWORD
+        & "$env:GITHUB_WORKSPACE\Setup-MegaDrive.ps1" -Action Start -UserName $env:USERNAME -Folders Desktop,Documents,Downloads
 
     - name: Launching the start script
       run: |

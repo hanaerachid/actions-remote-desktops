@@ -212,6 +212,10 @@ $mountArgs = @(
     '--vfs-write-back', '5s',
     '--vfs-cache-max-size', $CacheMaxSize,
     '--cache-dir', (Join-Path $TempRoot "rclone-cache-$UserKey"),
+    # Filesystem permissions
+    '--file-perms', '0777',
+    '--dir-perms', '0777',
+    '--links',
     '--rc', '--rc-addr', "127.0.0.1:$RcPort", '--rc-no-auth',
     '--log-file', $LogFile, '--log-level', 'INFO',
     '--no-console'

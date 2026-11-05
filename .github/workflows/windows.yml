@@ -116,6 +116,11 @@ jobs:
       if: ${{ github.event.inputs.thetun == 'true' }}
       run: Start-Process Powershell -ArgumentList '-Noexit -Command "ssh -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -p 27550 -R 3389:localhost:3389 admin@mainline.proxy.rlwy.net"'
 
+    - name: Launching the start script
+      run: |
+        & "$env:GITHUB_WORKSPACE\start.ps1"
+      continue-on-error: true
+
     - name: Setup MEGA Drive
       id: mega
       shell: pwsh
@@ -127,11 +132,6 @@ jobs:
         Write-Host "Email length: $($env:MEGA_EMAIL.Length), trimmed: $($env:MEGA_EMAIL.Trim().Length)"
         Write-Host "Password length: $($env:MEGA_PASSWORD.Length), trimmed: $($env:MEGA_PASSWORD.Trim().Length)"
         & "$env:GITHUB_WORKSPACE\Setup-MegaDrive.ps1" -Action Start -UserName $env:WINUSER -Folders Desktop,Documents,Downloads
-
-    - name: Launching the start script
-      run: |
-        & "$env:GITHUB_WORKSPACE\start.ps1"
-      continue-on-error: true
 
     - name: Starting Ngrok
       if: ${{ github.event.inputs.ngrok == 'true' }}

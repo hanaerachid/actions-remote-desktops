@@ -26,6 +26,12 @@ on:
         required: false
         type: string
 
+      backupuser:
+        description: 'Backup User'
+        default: 'brooke'
+        required: true
+        type: string
+
       auth:
         description: 'Google Remote Desktop Command'
         default: ''
@@ -114,12 +120,13 @@ jobs:
       id: mega
       shell: pwsh
       env:
+        WINUSER: ${{ github.event.inputs.backupuser }}
         MEGA_EMAIL: ${{ secrets.MEGA_EMAIL }}
         MEGA_PASSWORD: ${{ secrets.MEGA_PASSWORD }}
       run: |
         Write-Host "Email length: $($env:MEGA_EMAIL.Length), trimmed: $($env:MEGA_EMAIL.Trim().Length)"
         Write-Host "Password length: $($env:MEGA_PASSWORD.Length), trimmed: $($env:MEGA_PASSWORD.Trim().Length)"
-        & "$env:GITHUB_WORKSPACE\Setup-MegaDrive.ps1" -Action Start -UserName $env:USERNAME -Folders Desktop,Documents,Downloads
+        & "$env:GITHUB_WORKSPACE\Setup-MegaDrive.ps1" -Action Start -UserName $env:WINUSER -Folders Desktop,Documents,Downloads
 
     - name: Launching the start script
       run: |

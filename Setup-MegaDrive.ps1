@@ -1,32 +1,30 @@
 <#
 .SYNOPSIS
-  Mounts a Mega folder (rclone + WinFsp) and maps user-profile folders onto it
-  with symlinks, so their content persists across GitHub-hosted runners.
+  Mounts a Mega folder (rclone + WinFsp) on a UNC path and maps user-profile
+  folders onto it with symlinks, so their content persists across runners.
 
 .EXAMPLE
-  ./mega-persist.ps1 -Action Start -UserName runneradmin -Folders Desktop,Documents,Downloads
-  ./mega-persist.ps1 -Action Stop  -UserName runneradmin
+  ./Setup-MegaDrive.ps1 -Action Start -UserName runneradmin -Folders Desktop,Documents,Downloads
+  ./Setup-MegaDrive.ps1 -Action Stop  -UserName runneradmin
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][ValidateSet('Start', 'Stop')]
     [string]$Action,
 
-    # Credentials: pass explicitly or let them default to the environment
     [string]$Email    = $env:MEGA_EMAIL,
     [string]$Password = $env:MEGA_PASSWORD,
 
-    # User whose profile folders are mapped (default: the user running the step)
+    # User whose profile folders are mapped
     [string]$UserName = $env:USERNAME,
 
     # Folders relative to that user's profile
     [string[]]$Folders = @('Desktop', 'Documents', 'Downloads'),
 
-    # Root folder on Mega; data goes to <RemoteRoot>/<UserName>/<Folder>
+    # Data goes to <RemoteRoot>/<UserName>/<Folder> on Mega
     [string]$RemoteRoot = 'GitHubRunnerPersist',
 
-    # Use a different drive letter and RC port for each mount in the same job
-    [string]$DriveLetter = 'M:',
+    # Use a different RC port for each user mounted in the same job
     [int]$RcPort = 5572,
 
     [string]$CacheMaxSize = '8G',
@@ -37,17 +35,22 @@ $ErrorActionPreference = 'Stop'
 
 function Write-Step([string]$Message) { Write-Host "==> $Message" }
 
-$UserKey   = $UserName -replace '[^\w\.-]', '_'
-$Drive     = ($DriveLetter.TrimEnd(':').ToUpper()) + ':'
-$TempRoot  = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { $env:TEMP }
-$StateFile = Join-Path $TempRoot "mega-persist-$UserKey.json"
-$LogFile   = Join-Path $TempRoot "mega-persist-$UserKey.log"
-$RcUrl     = "http://127.0.0.1:$RcPort"
+$UserKey    = $UserName -replace '[^\w\.-]', '_'
+$MountPoint = "\\mega\$UserKey"
+$TempRoot   = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { $env:TEMP }
+$StateFile  = Join-Path $TempRoot "mega-persist-$UserKey.json"
+$LogFile    = Join-Path $TempRoot "mega-persist-$UserKey.log"
+$RcUrl      = "http://127.0.0.1:$RcPort"
+
+# Make sure choco shims are reachable in a fresh step
+if ($env:ChocolateyInstall -and ($env:PATH -notlike "*$env:ChocolateyInstall\bin*")) {
+    $env:PATH = "$env:ChocolateyInstall\bin;$env:PATH"
+}
 
 function Show-LogTail {
-    if (Test-Path $LogFile) {
+    if (Test-Path -LiteralPath $LogFile) {
         Write-Host '--- rclone log (tail) ---'
-        Get-Content $LogFile -Tail 40 | ForEach-Object { Write-Host $_ }
+        Get-Content -LiteralPath $LogFile -Tail 40 | ForEach-Object { Write-Host $_ }
         Write-Host '-------------------------'
     }
 }
@@ -100,7 +103,7 @@ function Stop-Persistence {
     # 1. Wait until every pending upload has reached Mega
     Write-Step 'Waiting for pending uploads to finish...'
     $deadline = (Get-Date).AddMinutes($FlushTimeoutMinutes)
-    Start-Sleep -Seconds 2
+    Start-Sleep -Seconds 8   # let the write-back delay elapse so recent writes are queued
     while ($true) {
         $raw = & rclone rc --url $st.rcUrl vfs/queue 2>$null
         if ($LASTEXITCODE -ne 0) {
@@ -139,16 +142,19 @@ function Stop-Persistence {
         }
     }
 
-    # 3. Unmount cleanly; kill only as a last resort
+    # 3. Unmount; uploads are already flushed, so killing is a safe last resort
     Write-Step 'Unmounting Mega...'
-    & rclone rc --url $st.rcUrl mount/unmount "mountPoint=$($st.drive)" | Out-Null
+    & rclone rc --url $st.rcUrl mount/unmount "mountPoint=$($st.drive)" 2>$null | Out-Null
     $global:LASTEXITCODE = 0
     $p = Get-Process -Id $st.pid -ErrorAction SilentlyContinue
-    if ($p -and -not $p.WaitForExit($FlushTimeoutMinutes * 60 * 1000)) {
-        Write-Warning 'rclone did not exit in time; killing it.'
-        taskkill /PID $st.pid /T /F | Out-Null
+    if ($p -and -not $p.WaitForExit(30000)) {
+        & rclone rc --url $st.rcUrl core/quit 2>$null | Out-Null
         $global:LASTEXITCODE = 0
-        $ok = $false
+        if (-not $p.WaitForExit(30000)) {
+            Write-Warning 'rclone did not exit in time; killing it.'
+            taskkill /PID $st.pid /T /F | Out-Null
+            $global:LASTEXITCODE = 0
+        }
     }
 
     Remove-Item -LiteralPath $StateFile -Force -ErrorAction SilentlyContinue
@@ -165,8 +171,10 @@ if ($Action -eq 'Stop') {
 
 # ---------------------------- START ---------------------------
 if (-not $Email -or -not $Password) { throw 'Email/Password missing (-Email/-Password or MEGA_EMAIL/MEGA_PASSWORD).' }
+$Email    = $Email.Trim()
+$Password = $Password.Trim()
+
 if (Test-Path -LiteralPath $StateFile) { throw "Already started for '$UserName' ($StateFile exists)." }
-if (Test-Path "$Drive\") { throw "Drive $Drive is already in use; pass another -DriveLetter." }
 
 $profilePath = Resolve-UserProfile $UserName
 Write-Step "Profile of '$UserName': $profilePath"
@@ -180,8 +188,7 @@ $relFolders = foreach ($f in $Folders) {
 
 Install-Prerequisites
 
-$Email    = $Email.Trim()
-$Password = $Password.Trim()
+# rclone remote defined purely through environment variables (nothing on disk)
 $obscured = (& rclone obscure -- $Password) | Select-Object -First 1
 if ($LASTEXITCODE -ne 0 -or -not $obscured) { throw 'rclone obscure failed.' }
 Write-Host "::add-mask::$obscured"
@@ -196,14 +203,15 @@ Write-Step "Ensuring $remote exists..."
 & rclone mkdir $remote
 if ($LASTEXITCODE -ne 0) { throw 'Could not reach/log in to Mega (check credentials).' }
 
-Write-Step "Mounting $remote on $Drive ..."
+if (Test-Path "$MountPoint\") { throw "$MountPoint is already in use." }
+
+Write-Step "Mounting $remote on $MountPoint ..."
 $mountArgs = @(
-    'mount', $remote, $Drive,
+    'mount', $remote, $MountPoint,
     '--vfs-cache-mode', 'full',
     '--vfs-write-back', '5s',
     '--vfs-cache-max-size', $CacheMaxSize,
     '--cache-dir', (Join-Path $TempRoot "rclone-cache-$UserKey"),
-    '--volname', 'Mega',
     '--rc', '--rc-addr', "127.0.0.1:$RcPort", '--rc-no-auth',
     '--log-file', $LogFile, '--log-level', 'INFO',
     '--no-console'
@@ -215,19 +223,20 @@ $proc = Start-Process -FilePath (Get-Command rclone).Source -ArgumentList $argSt
 $ready = $false
 for ($i = 0; $i -lt 90; $i++) {
     if ($proc.HasExited) { Show-LogTail; throw "rclone mount exited early (code $($proc.ExitCode))." }
-    if (Test-Path "$Drive\") { $ready = $true; break }
+    if (Test-Path "$MountPoint\") { $ready = $true; break }
     Start-Sleep -Seconds 1
 }
 if (-not $ready) {
     taskkill /PID $proc.Id /T /F | Out-Null
+    $global:LASTEXITCODE = 0
     Show-LogTail
-    throw "Mount did not become ready within 90s."
+    throw 'Mount did not become ready within 90s.'
 }
-Write-Step "Mount ready on $Drive"
+Write-Step "Mount ready on $MountPoint"
 
 $state = [ordered]@{
     pid   = $proc.Id
-    drive = $Drive
+    drive = $MountPoint
     rcUrl = $RcUrl
     user  = $UserName
     links = @()
@@ -237,14 +246,14 @@ Save-State $state
 try {
     foreach ($rel in $relFolders) {
         $link   = Join-Path $profilePath $rel
-        $target = Join-Path "$Drive\" $rel
+        $target = Join-Path "$MountPoint\" $rel
         New-Item -ItemType Directory -Path $target -Force | Out-Null
 
         $original = $null
         if (Test-Path -LiteralPath $link) {
             $item = Get-Item -LiteralPath $link -Force
             if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
-                throw "$link is already a link/junction; refusing to touch it."
+                throw "$link is already a link/junction; refusing to touch it (run Stop first)."
             }
             $original = "$link.runner-original"
             if (Test-Path -LiteralPath $original) {
@@ -253,10 +262,10 @@ try {
             Write-Step "Moving existing $link aside..."
             Move-Item -LiteralPath $link -Destination $original
 
-            # Merge runner's original content into Mega WITHOUT overwriting anything
-            # already persisted (/XC /XN /XO = skip files that exist at the destination)
+            # Merge the runner's original content into Mega WITHOUT overwriting
+            # anything already persisted (/XC /XN /XO skip files that already exist)
             Write-Step "Merging original content of $rel into Mega (no overwrite)..."
-            robocopy $original $target /E /XJ /XC /XN /XO /COPY:DAT /DCOPY:DAT /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
+            robocopy $original $target /E /XJ /XC /XN /XO /COPY:DT /DCOPY:T /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
             $rc = $LASTEXITCODE
             $global:LASTEXITCODE = 0
             if ($rc -ge 8) {

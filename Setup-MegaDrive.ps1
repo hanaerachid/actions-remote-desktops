@@ -177,6 +177,13 @@ $Password = $Password.Trim()
 if (Test-Path -LiteralPath $StateFile) { throw "Already started for '$UserName' ($StateFile exists)." }
 
 $profilePath = Resolve-UserProfile $UserName
+
+$userSid = (New-Object Security.Principal.NTAccount($UserName)).Translate(
+    [Security.Principal.SecurityIdentifier]
+).Value
+
+Write-Step "Target user SID: $userSid"
+
 Write-Step "Profile of '$UserName': $profilePath"
 
 $relFolders = foreach ($f in $Folders) {
@@ -212,10 +219,16 @@ $mountArgs = @(
     '--vfs-write-back', '5s',
     '--vfs-cache-max-size', $CacheMaxSize,
     '--cache-dir', (Join-Path $TempRoot "rclone-cache-$UserKey"),
+
     # Filesystem permissions
     '--file-perms', '0777',
     '--dir-perms', '0777',
+    
+    # Explicit Windows ACL: Full Control for the target user
+    '--fuse-flag', "-o FileSecurity=D:P(A;;FA;;;$userSid)",
+    
     '--links',
+
     '--rc', '--rc-addr', "127.0.0.1:$RcPort", '--rc-no-auth',
     '--log-file', $LogFile, '--log-level', 'INFO',
     '--no-console'

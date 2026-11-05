@@ -180,8 +180,9 @@ $relFolders = foreach ($f in $Folders) {
 
 Install-Prerequisites
 
-# rclone remote defined purely through environment variables (nothing on disk)
-$obscured = ($Password | & rclone obscure -)
+$Email    = $Email.Trim()
+$Password = $Password.Trim()
+$obscured = (& rclone obscure -- $Password) | Select-Object -First 1
 if ($LASTEXITCODE -ne 0 -or -not $obscured) { throw 'rclone obscure failed.' }
 Write-Host "::add-mask::$obscured"
 Write-Host "::add-mask::$Password"

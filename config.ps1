@@ -6,6 +6,11 @@ Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\P
 # System Level Dark Mode for all users
 Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name SystemUsesLightTheme -Value 0 -Type Dword -Force
 
+# Hide First Run Experience in Edge 
+$EdgePath = "HKLM:\SOFTWARE\Policies\Microsoft\Edge"
+New-Item -Path $EdgePath -Force | Out-Null
+New-ItemProperty -Path $EdgePath -Name "HideFirstRunExperience" -PropertyType DWord -Value 1 -Force
+
 # Invoke-WebRequest 'https://dl.google.com/drive-file-stream/GoogleDriveSetup.exe' -OutFile GoogleDriveSetup.exe
 # GoogleDriveSetup --silent --desktop_shortcut --skip_launch_new
 

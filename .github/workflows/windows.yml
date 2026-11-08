@@ -96,6 +96,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Installing and configuring Ngrok
+      if: ${{ github.event.inputs.ngrok == 'true' }}
       env:
         NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
       run: |
@@ -121,18 +122,6 @@ jobs:
         & "$env:GITHUB_WORKSPACE\start.ps1"
       continue-on-error: true
 
-    - name: Setup MEGA Drive
-      id: mega
-      shell: pwsh
-      env:
-        WINUSER: ${{ github.event.inputs.backupuser }}
-        MEGA_EMAIL: ${{ secrets.MEGA_EMAIL }}
-        MEGA_PASSWORD: ${{ secrets.MEGA_PASSWORD }}
-      run: |
-        Write-Host "Email length: $($env:MEGA_EMAIL.Length), trimmed: $($env:MEGA_EMAIL.Trim().Length)"
-        Write-Host "Password length: $($env:MEGA_PASSWORD.Length), trimmed: $($env:MEGA_PASSWORD.Trim().Length)"
-        & "$env:GITHUB_WORKSPACE\Setup-MegaDrive.ps1" -Action Start -UserName $env:WINUSER -Folders Desktop,Documents,Downloads
-
     - name: Starting Ngrok
       if: ${{ github.event.inputs.ngrok == 'true' }}
       run: |
@@ -148,6 +137,18 @@ jobs:
         $port = $uri.Port
         $hostname = $uri.Host
         Write-Host ${hostname}:${port}
+
+    - name: Setup MEGA Drive
+      id: mega
+      shell: pwsh
+      env:
+        WINUSER: ${{ github.event.inputs.backupuser }}
+        MEGA_EMAIL: ${{ secrets.MEGA_EMAIL }}
+        MEGA_PASSWORD: ${{ secrets.MEGA_PASSWORD }}
+      run: |
+        Write-Host "Email length: $($env:MEGA_EMAIL.Length), trimmed: $($env:MEGA_EMAIL.Trim().Length)"
+        Write-Host "Password length: $($env:MEGA_PASSWORD.Length), trimmed: $($env:MEGA_PASSWORD.Trim().Length)"
+        & "$env:GITHUB_WORKSPACE\Setup-MegaDrive.ps1" -Action Start -UserName $env:WINUSER -Folders Desktop,Documents,Downloads
 
     - name: Configuration
       run: |

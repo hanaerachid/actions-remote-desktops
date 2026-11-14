@@ -43,7 +43,7 @@ on:
         required: false
 
       office:
-        description: 'Install Microsoft 365?'
+        description: 'Download Office 2024?'
         default: false
         required: false
         type: boolean
@@ -190,10 +190,14 @@ jobs:
         Invoke-Expression '$env:GITHUB_WORKSPACE\install_illustrator.ps1'
       continue-on-error: true
 
-    - name: Microsoft 365 Installation.
+    - name: Download and mount Office 2024.
       if: ${{ github.event.inputs.office == 'true' }}
+      shell: pwsh
       run: |
-        choco install office365business | Out-Null
+        $url = "https://officecdn.microsoft.com/pr/492350f6-3a01-4f97-b9c0-c7c6ddf67d60/media/en-us/ProPlus2024Retail.img"
+        $image = "$env:RUNNER_TEMP\ProPlus2024Retail.img"
+        Start-BitsTransfer -Source $url -Destination $image -ErrorAction Stop
+        Mount-DiskImage "$env:TEMP\ProPlus2024Retail.img"
       continue-on-error: true
 
     - name: QGIS Installation.

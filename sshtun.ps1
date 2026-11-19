@@ -1,13 +1,13 @@
+param(
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$SshArgs
+)
+
 while ($true) {
-    Write-Host "Starting SSH tunnel..."
+    Write-Host "Starting SSH: ssh $SshArgs"
 
-    ssh -o StrictHostKeyChecking=accept-new `
-       -o ServerAliveInterval=30 `
-       -o ServerAliveCountMax=3 `
-       -p 27550 `
-       -R 3389:localhost:3389 `
-       admin@mainline.proxy.rlwy.net
+    & ssh @SshArgs
 
-    Write-Host "SSH stopped. Restarting in 3 seconds..."
+    Write-Host "SSH exited. Restarting in 3 seconds..."
     Start-Sleep -Seconds 3
 }

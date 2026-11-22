@@ -123,7 +123,6 @@ jobs:
         USER_PASSWORD: ${{ secrets.LOCAL_USER_PASSWORD }}
       run: |
         & "$env:GITHUB_WORKSPACE\start.ps1" -Password $env:USER_PASSWORD
-        Remove-Variable Password
       continue-on-error: true
 
     - name: Starting Ngrok
@@ -152,7 +151,7 @@ jobs:
       run: |
         Write-Host "Email length: $($env:MEGA_EMAIL.Length), trimmed: $($env:MEGA_EMAIL.Trim().Length)"
         Write-Host "Password length: $($env:MEGA_PASSWORD.Length), trimmed: $($env:MEGA_PASSWORD.Trim().Length)"
-        & "$env:GITHUB_WORKSPACE\Setup-MegaDrive.ps1" -Action Start -UserName $env:WINUSER -Folders Desktop,Documents,Downloads
+        & "$env:GITHUB_WORKSPACE\Setup-MegaDrive.ps1" -Action Start -UserName $env:WINUSER -Folders AppData,Desktop,Documents,Downloads
 
     - name: Configuration
       run: |

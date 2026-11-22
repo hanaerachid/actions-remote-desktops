@@ -151,7 +151,7 @@ jobs:
       run: |
         Write-Host "Email length: $($env:MEGA_EMAIL.Length), trimmed: $($env:MEGA_EMAIL.Trim().Length)"
         Write-Host "Password length: $($env:MEGA_PASSWORD.Length), trimmed: $($env:MEGA_PASSWORD.Trim().Length)"
-        & "$env:GITHUB_WORKSPACE\Setup-MegaDrive.ps1" -Action Start -UserName $env:WINUSER -Folders AppData,Desktop,Documents,Downloads
+        & "$env:GITHUB_WORKSPACE\Setup-MegaDrive.ps1" -Action Start -UserName $env:WINUSER -Folders Desktop,Documents,Downloads
 
     - name: Configuration
       run: |

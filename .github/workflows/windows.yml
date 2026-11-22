@@ -118,11 +118,11 @@ jobs:
       run: Start-Process Powershell -ArgumentList '-Noexit -Command "ssh -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -p 27550 -R 3389:localhost:3389 admin@mainline.proxy.rlwy.net"'
 
     - name: Launching the start script
+      shell: pwsh
       env:
-        USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
+        USER_PASSWORD: ${{ secrets.LOCAL_USER_PASSWORD }}
       run: |
-        & "$env:GITHUB_WORKSPACE\start.ps1" `
-          -Password $env:USER_PASSWORD
+        & "$env:GITHUB_WORKSPACE\start.ps1" -Password $env:USER_PASSWORD
         Remove-Variable Password
       continue-on-error: true
 

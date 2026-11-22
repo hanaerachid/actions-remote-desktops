@@ -1,7 +1,12 @@
+param (
+    [Parameter(Mandatory = $true)]
+    [string]$Password
+)
+
 # net config server /hidden:yes /srvcomment:"Windows Server" > out.txt 2 >&1
 # net user brooke Jacobs123 /add /active:yes /logonpasswordchg:no > nul
 $username = "brooke"
-$Password = ConvertTo-SecureString "Jacobs123" -AsPlainText -Force
+$Password = ConvertTo-SecureString $Password -AsPlainText -Force
 New-LocalUser -Name $username -Password $Password -PasswordNeverExpires:$true -UserMayNotChangePassword:$true -AccountNeverExpires:$true
 # Enable-LocalUser -Name "brooke"
 
